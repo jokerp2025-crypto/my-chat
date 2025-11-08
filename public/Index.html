@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Eclipse Hunter — Full Fixed Chat (مهگل)</title>
+<style>
+:root{--bg:#0b0d10;--accent1:#5b8bff;--accent2:#ff5b83;--me-start:#2f80ed;--me-end:#255bd8;--other:#26292c;--muted:rgba(255,255,255,0.6)}
+*{box-sizing:border-box}html,body{height:100%;margin:0;font-family:Vazirmatn,system-ui,'Segoe UI';background:var(--bg);color:#e8eef8;direction:rtl}
+#pwGate{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at top left,#071021 0%,#020205 100%);transition:opacity 1s ease;z-index:9999}
+#pwBox{width:400px;max-width:90vw;padding:32px;border-radius:14px;text-align:center;background:rgba(255,255,255,0.02);box-shadow:0 0 40px rgba(0,0,0,0.6)}
+#pwBox h1{margin:0 0 10px;font-size:28px;font-weight:900;background:linear-gradient(90deg,var(--accent1),var(--accent2));-webkit-background-clip:text;color:transparent}
+#pwBox p{color:var(--muted);margin-bottom:16px}
+#pwInput{width:100%;padding:12px;border-radius:10px;border:none;background:rgba(255,255,255,0.05);color:#fff;text-align:center;font-size:15px;outline:none;margin-bottom:12px}
+#pwEnterBtn{width:100%;padding:12px;border-radius:10px;border:none;background:linear-gradient(90deg,var(--accent1),var(--accent2));color:#fff;font-weight:700;cursor:pointer}
+.toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.85);padding:8px 14px;border-radius:10px;opacity:0;transition:opacity .3s;z-index:9900}
+.toast.show{opacity:1}
+#welcomeMsg{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0.96);padding:18px 30px;border-radius:12px;font-size:20px;font-weight:900;color:#fff;background:linear-gradient(135deg,var(--accent1),#b05bff,var(--accent2));opacity:0;transition:opacity .15s,transform .15s;z-index:9800}
+#mainCanvas{display:none;height:100vh;width:100%;background:var(--bg)}
+#profileBtnWrap{position:fixed;top:16px;left:16px;z-index:900;display:none}
+#profileBtn{display:flex;align-items:center;gap:8px;padding:8px 12px;border:none;border-radius:999px;background:linear-gradient(90deg,var(--accent2),var(--accent1));color:#fff;font-weight:800;cursor:pointer}
+#chatToggle{position:fixed;left:16px;bottom:16px;width:56px;height:56px;border:none;border-radius:50%;background:linear-gradient(135deg,var(--accent1),var(--accent2));color:#fff;font-size:24px;font-weight:900;cursor:pointer;z-index:900}
+#chatPanel{position:fixed;left:16px;bottom:86px;width:400px;max-width:92vw;height:540px;background:#10151b;border-radius:12px;display:none;flex-direction:column;box-shadow:0 0 30px rgba(0,0,0,0.8)}
+.cp-header{padding:10px;display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.04)}
+.cp-header .avatar{width:42px;height:42px;border-radius:50%;overflow:hidden;background:rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:center;font-weight:800}
+.cp-body{flex:1;padding:12px;overflow:auto;display:flex;flex-direction:column;gap:8px}
+.msg-row{display:flex;align-items:flex-end;gap:6px}
+.msg-row.you{justify-content:flex-end}
+.msg-bubble{max-width:75%;padding:8px 12px;border-radius:10px;position:relative;line-height:1.4;font-size:14px}
+.msg-row.you .msg-bubble{background:linear-gradient(90deg,var(--me-start),var(--me-end));color:#fff}
+.msg-row.other .msg-bubble{background:var(--other);color:#dfe7f3}
+.msg-bubble .meta{display:block;font-size:10px;opacity:0.7;margin-top:4px;text-align:left}
+.cp-input{display:flex;gap:8px;padding:10px;border-top:1px solid rgba(255,255,255,0.1)}
+.cp-input input{flex:1;padding:10px;border:none;border-radius:10px;background:rgba(255,255,255,0.05);color:#fff;outline:none}
+.sendBtn{padding:10px 14px;border:none;border-radius:10px;background:linear-gradient(90deg,var(--me-start),var(--me-end));color:#fff;font-weight:700;cursor:pointer}
+#profileModal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.6);z-index:950}
+.profileCard{background:#111a22;border-radius:10px;padding:16px;width:360px;max-width:90vw;color:#fff}
+.profileRow{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.profileRow input{flex:1;padding:8px;border:none;border-radius:8px;background:rgba(255,255,255,0.05);color:#fff}
+</style>
+</head>
+<body>
+<div id="pwGate"><div id="pwBox"><h1>Eclipse Hunter</h1><p>برای ادامه رمز را وارد کنید</p><input id="pwInput" type="password" placeholder="رمز عبور..." /><button id="pwEnterBtn">ورود</button></div></div>
+<div id="toast" class="toast"></div>
+<div id="welcomeMsg">✨ خوش اومدی مهگل ✨</div>
+<div id="mainCanvas"></div>
+<div id="profileBtnWrap"><button id="profileBtn">🧍 پروفایل</button></div>
+<button id="chatToggle">💬</button>
+<div id="chatPanel"><div class="cp-header"><div id="chatAvatar" class="avatar">?</div><div id="chatName">ناشناس</div></div><div id="chatBody" class="cp-body"></div><div class="cp-input"><input id="chatInput" placeholder="پیام..." /><button id="sendBtn" class="sendBtn">ارسال</button></div></div>
+<div id="profileModal"><div class="profileCard"><h3>پروفایل</h3><div class="profileRow"><div id="profileAvatar" class="avatar" style="width:60px;height:60px">?</div><input id="profileName" placeholder="نام..." /></div><div><input id="profileFile" type="file" accept="image/*" /></div><div style="text-align:left;margin-top:10px"><button id="saveProfile" class="sendBtn">ذخیره</button> <button id="closeProfile" class="sendBtn" style="background:#444">بستن</button></div></div></div>
+<script>
+const PASSWORD='MAHGOL123';
+const pwGate=document.getElementById('pwGate'),pwInput=document.getElementById('pwInput'),btn=document.getElementById('pwEnterBtn'),toast=document.getElementById('toast'),msg=document.getElementById('welcomeMsg'),main=document.getElementById('mainCanvas'),profileWrap=document.getElementById('profileBtnWrap');
+function showToast(t){toast.textContent=t;toast.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>toast.classList.remove('show'),1800)}
+function welcome(){msg.style.opacity='1';msg.style.transform='translate(-50%,-50%) scale(1)';setTimeout(()=>{msg.style.opacity='0';msg.style.transform='translate(-50%,-50%) scale(0.96)'},1500)}
+function success(){showToast('ورود موفق ✅');welcome();sessionStorage.setItem('ok','1');pwGate.style.opacity='0';setTimeout(()=>{pwGate.style.display='none';main.style.display='block';profileWrap.style.display='block'},1000)}
+function fail(){showToast('رمز اشتباهه ❌');pwInput.value='';}
+btn.onclick=()=>{pwInput.value.trim()===PASSWORD?success():fail()}
+pwInput.onkeydown=e=>{if(e.key==='Enter')(pwInput.value.trim()===PASSWORD?success():fail())}
+if(sessionStorage.getItem('ok')==='1'){pwGate.style.display='none';main.style.display='block';profileWrap.style.display='block'}
+const profileBtn=document.getElementById('profileBtn'),profileModal=document.getElementById('profileModal'),closeProfile=document.getElementById('closeProfile'),saveProfile=document.getElementById('saveProfile'),profileName=document.getElementById('profileName'),profileAvatar=document.getElementById('profileAvatar'),profileFile=document.getElementById('profileFile'),chatToggle=document.getElementById('chatToggle'),chatPanel=document.getElementById('chatPanel'),chatBody=document.getElementById('chatBody'),chatInput=document.getElementById('chatInput'),sendBtn=document.getElementById('sendBtn'),chatName=document.getElementById('chatName'),chatAvatar=document.getElementById('chatAvatar');
+let user=JSON.parse(localStorage.getItem('user_mahegel')||'{}');let msgs=JSON.parse(localStorage.getItem('msgs_mahegel')||'[]');
+function renderUser(){chatName.textContent=user.name||'ناشناس';if(user.image){chatAvatar.innerHTML='<img src="'+user.image+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';profileAvatar.innerHTML='<img src="'+user.image+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';}else{let ini=(user.name||'?').trim().slice(0,2).toUpperCase();chatAvatar.textContent=ini;profileAvatar.textContent=ini;}profileName.value=user.name||'';}
+function renderMsgs(){chatBody.innerHTML='';msgs.forEach((m,i)=>{const div=document.createElement('div');div.className='msg-row '+(m.me?'you':'other');div.innerHTML='<div class="msg-bubble">'+m.text+'<div class="meta">'+new Date(m.ts).toLocaleTimeString('fa-IR',{hour:'2-digit',minute:'2-digit'})+'</div></div>';if(m.me){const del=document.createElement('button');del.textContent='🗑️';del.style.position='absolute';del.style.left='4px';del.style.top='4px';del.style.border='none';del.style.background='transparent';del.style.cursor='pointer';del.onclick=()=>{if(confirm('حذف شود؟')){msgs.splice(i,1);localStorage.setItem('msgs_mahegel',JSON.stringify(msgs));renderMsgs();}};div.querySelector('.msg-bubble').appendChild(del);}chatBody.appendChild(div);});chatBody.scrollTop=chatBody.scrollHeight;}
+renderUser();renderMsgs();
+profileBtn.onclick=()=>{profileModal.style.display='flex';}
+closeProfile.onclick=()=>{profileModal.style.display='none';}
+profileFile.onchange=e=>{const f=e.target.files[0];if(f){const r=new FileReader();r.onload=a=>{user.image=a.target.result;renderUser();};r.readAsDataURL(f);}}
+saveProfile.onclick=()=>{user.name=profileName.value.trim();localStorage.setItem('user_mahegel',JSON.stringify(user));renderUser();profileModal.style.display='none';}
+chatToggle.onclick=()=>{chatPanel.style.display=chatPanel.style.display==='flex'?'none':'flex';if(chatPanel.style.display==='flex')renderMsgs();}
+sendBtn.onclick=()=>{if(!chatInput.value.trim())return;msgs.push({text:chatInput.value.trim(),me:true,ts:Date.now()});localStorage.setItem('msgs_mahegel',JSON.stringify(msgs));chatInput.value='';renderMsgs();}
+chatInput.onkeydown=e=>{if(e.key==='Enter')sendBtn.onclick();}
+</script>
+
+<!-- Insert visible password error message and override fail behavior -->
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  try{
+    var pwBox = document.getElementById('pwBox');
+    if(pwBox && !document.getElementById('pwError')){
+      var err = document.createElement('div');
+      err.id = 'pwError';
+      err.style.color = '#ff8a8a';
+      err.style.marginTop = '8px';
+      err.style.fontWeight = '700';
+      err.style.display = 'none';
+      err.textContent = 'رمز اشتباه است';
+      pwBox.appendChild(err);
+    }
+    // override fail function: show toast and visible error
+    window.__eh_override_fail = function(){
+      try{
+        var toast = document.getElementById('toast');
+        if(toast){ toast.textContent = 'رمز اشتباهه ❌'; toast.classList.add('show'); clearTimeout(toast._t); toast._t=setTimeout(function(){ toast.classList.remove('show'); },1800); }
+        var pe = document.getElementById('pwError');
+        if(pe){ pe.style.display = 'block'; setTimeout(function(){ pe.style.display = 'none'; }, 3000); }
+        var pwInput = document.getElementById('pwInput');
+        if(pwInput){ pwInput.value=''; pwInput.focus(); }
+      }catch(e){ console.warn(e); }
+    };
+    // find existing button and input to wire up to use override if needed
+    var btn = document.getElementById('pwEnterBtn');
+    var input = document.getElementById('pwInput');
+    if(btn){
+      btn.addEventListener('click', function(e){
+        try{
+          var v = (input && input.value) ? input.value.trim() : '';
+          if(v === 'MAHGOL123'){ 
+            if(typeof window.__eh_original_success === 'function'){
+              window.__eh_original_success();
+            } else {
+              location.reload();
+            }
+          } else {
+            window.__eh_override_fail();
+          }
+        }catch(err){
+          console.warn(err);
+        }
+      }, {once:false});
+    }
+    if(input){
+      input.addEventListener('keydown', function(e){
+        if(e.key === 'Enter'){
+          var v = (input && input.value) ? input.value.trim() : '';
+          if(v === 'MAHGOL123'){
+            if(typeof window.__eh_original_success === 'function'){
+              window.__eh_original_success();
+            } else {
+              location.reload();
+            }
+          } else {
+            window.__eh_override_fail();
+          }
+        }
+      });
+    }
+    // Try to capture any existing success function by wrapping current onclick if present
+    try{
+      var existingBtn = document.getElementById('pwEnterBtn');
+      if(existingBtn && existingBtn.onclick){
+        window.__eh_original_success = existingBtn.onclick;
+      }
+    }catch(e){}
+  }catch(err){ console.warn('pw error injection failed', err); }
+});
+</script>
+
+
+<!-- profile mobile focus fix -->
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  try {
+    const profileModal = document.getElementById('profileModal');
+    const profileBtn = document.getElementById('profileBtn');
+    const profileName = document.getElementById('profileName');
+    const saveProfile = document.getElementById('saveProfile');
+    const profileAvatar = document.getElementById('profileAvatar');
+    const chatName = document.getElementById('chatName');
+    const chatAvatar = document.getElementById('chatAvatar');
+
+    if(profileName){
+      profileName.removeAttribute('readonly');
+      profileName.disabled = false;
+      profileName.style.pointerEvents = 'auto';
+      profileName.style.touchAction = 'auto';
+      profileName.setAttribute('autocomplete','name');
+      profileName.setAttribute('inputmode','text');
+      profileName.setAttribute('autocapitalize','words');
+    }
+
+    if(profileBtn){
+      profileBtn.addEventListener('click', function(){
+        if(profileModal){
+          profileModal.style.display = 'flex';
+          profileModal.style.zIndex = '9999';
+          setTimeout(function(){
+            try { profileName.focus(); profileName.select(); } catch(e){}
+          }, 250);
+        }
+      });
+    }
+
+    if(saveProfile && profileName){
+      saveProfile.addEventListener('click', function(){
+        const name = profileName.value.trim() || 'ناشناس';
+        let user = {};
+        try { user = JSON.parse(localStorage.getItem('user_mahegel') || '{}'); } catch(e) { user = {}; }
+        user.name = name;
+        localStorage.setItem('user_mahegel', JSON.stringify(user));
+        if(chatName) chatName.textContent = name;
+        if(chatAvatar){
+          if(user.image){
+            chatAvatar.innerHTML = '<img src="'+user.image+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';
+          } else {
+            chatAvatar.textContent = name.slice(0,2).toUpperCase();
+          }
+        }
+        if(profileModal) profileModal.style.display = 'none';
+      });
+    }
+  } catch(err){ console.warn('mobile profile fix error', err); }
+});
+</script>
+
+<!-- ✅ پشتیبانی از چت آنلاین واقعی -->
+<script src="/socket.io/socket.io.js"></script>
+<script>
+  // اتصال به سرور
+  const socket = io();
+
+  // وقتی پیام جدید از سایر کاربران می‌رسد
+  socket.on('chat message', (msg) => {
+    try {
+      msgs.push({ text: msg.text, me: false, ts: msg.ts });
+      localStorage.setItem('msgs_mahegel', JSON.stringify(msgs));
+      renderMsgs();
+    } catch (e) {
+      console.warn('خطا در دریافت پیام:', e);
+    }
+  });
+
+  // تغییر در دکمه‌ی ارسال برای فرستادن پیام به سرور
+  sendBtn.onclick = () => {
+    if (!chatInput.value.trim()) return;
+    const message = { text: chatInput.value.trim(), ts: Date.now() };
+    msgs.push({ ...message, me: true });
+    localStorage.setItem('msgs_mahegel', JSON.stringify(msgs));
+    renderMsgs();
+    chatInput.value = '';
+
+    // ارسال پیام به بقیه کاربران
+    socket.emit('chat message', message);
+  };
+
+  // اجازه ارسال با Enter
+  chatInput.onkeydown = (e) => {
+    if (e.key === 'Enter') sendBtn.onclick();
+  };
+</script>
+
+</body></html>
