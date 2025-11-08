@@ -21,4 +21,6 @@ io.on('connection', (socket) => {
 });
 
 const PORT = 3000;
-server.listen(PORT, () => console.log(`💬 سرور اجرا شد: http://localhost:${PORT}`));
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`🌍 سرور آنلاین شد در پورت ${PORT}`);
+});
